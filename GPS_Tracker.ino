@@ -1,19 +1,33 @@
-#include "U8glib.h"
+#include <SSD1306.h>
 
-U8GLIB_SSD1306_128X64 u8g(U8G_I2C_OPT_NONE | U8G_I2C_OPT_DEV_0); // I2C / TWI
+#define SDA_PIN 8
+#define SCL_PIN 9
+
+typedef unsigned int uint;
+
+SSD1306 display(SDA_PIN,SCL_PIN);
+
 int inp = 0;
+
+void show()
+{
+  display.setCursor(0,0);
+  display.print();
+  display.update();
+}
 
 void setup()
 {
   Serial.begin(9600);
-  u8g.setColorIndex(1);
-  u8g.setFont(u8g_font_unifont);
+  display.initialize();
+  display.setCursor(0,0);
+  display.print("GPS_Tracker By SMD");
+  display.update();
+  delay(1500);
+  display.clear();
 }
 
 void loop()
 {
-  u8g.firstPage();
-  while (Serial.available() > 0)
-    inp = Serial.read();
-  do u8g.drawStr( 0, 22, (char*)inp); while (u8g.nextPage());
+  
 }
