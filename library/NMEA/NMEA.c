@@ -28,7 +28,7 @@ GPS GPS_Proc(char *GGA, char *RMC)
 		if(now.stat==0||now.stat==6) return now;
 
 		i+=2;	//The Fifth Section: Satelite Count(xx)
-		now.sat = 10*c2i(GGA[i]) + c2i(GGA[i+1]);
+		now.satC = 10*c2i(GGA[i]) + c2i(GGA[i+1]);
 
 		i+=8;	//The Final Section: Height(xxxxx.x)
 		now.hgt = c2i(GGA[i]);
