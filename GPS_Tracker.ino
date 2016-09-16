@@ -1,5 +1,5 @@
-#include <SSD1306.h>
-#include <NMEA.h>
+#include "SSD1306.h"
+#include "NMEA.h"
 
 #define SDA_PIN 8
 #define SCL_PIN 9
