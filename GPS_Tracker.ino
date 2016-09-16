@@ -1,20 +1,16 @@
 #include "SSD1306.h"
 #include "TinyGPS.h"
+#include "GPS_Tracker.h"
 
 #define SDA_PIN 8
 #define SCL_PIN 9
 
-struct
-{
-  float lat, lon, alt, spd;
-  int year;
-  byte month, day, hour, minute, second;
-  unsigned long hdop;
-  unsigned short sat;
-} now;
-
 SSD1306 display(SDA_PIN,SCL_PIN);
 TinyGPS gps;
+GPSdat now;
+
+int TZ;
+volatile bool isRec = false, RecFlag = true;
 
 void show()
 {
@@ -26,20 +22,18 @@ void show()
   display.setCursor(0,9);
   display.print("Lon:");
   display.print(now.lon);
-
-  display.setCursor(0,18);
-  display.print("Sat:");
-  display.print(now.sat);
   
-  display.setCursor(0,27);
+  display.setCursor(0,18);
   display.print("Alt:");
   display.print(now.alt);
   
-  display.setCursor(0,36);
-  display.print("HDOP:");
+  display.setCursor(0,27);
+  display.print("Sat:");
+  display.print(now.sat);
+  display.print("  HDOP:");
   display.print(now.hdop);
   
-  display.setCursor(0,45);
+  display.setCursor(0,36);
   display.print("Date:");
   display.print(now.year);
   display.print("-");
@@ -47,13 +41,20 @@ void show()
   display.print("-");
   display.print(now.day);
   
-  display.setCursor(0,54);
+  display.setCursor(0,45);
   display.print("Time:");
   display.print(now.hour);
   display.print(":");
   display.print(now.minute);
   display.print(":");
   display.print(now.second);
+
+  if(isRec&&RecFlag)
+  {
+    display.setCursor(54,0);
+    display.print("Recording Track Points");
+  }
+  else RecFlag=-RecFlag;
   
   display.update();
 }
@@ -66,8 +67,25 @@ void showvalid()
   display.update();
 }
 
+void Rec()
+{
+  if(!isRec)
+  {
+    isRec = -isRec;
+    if(WriteInit(4)) CreateHead();
+  }
+  else
+  {
+    isRec = -isRec;
+    if(IsFile) CreateEnd();
+  }
+}
+
 void setup()
 {
+  SetTZ(8);
+  TZ = ReadTZ();
+  attachInterrupt(digitalPinToInterrupt(3), Rec, CHANGE);
   Serial.begin(9600);
   display.initialize();
   display.setCursor(0,0);
@@ -95,10 +113,12 @@ void loop()
   {
     gps.f_get_position(&now.lat, &now.lon);
     gps.get_datetime(&now.year, &now.month, &now.day, &now.hour, &now.minute, &now.second);
-    now.sat=gps.satellites();
-    now.alt=gps.altitude();
-    now.hdop=gps.hdop()/100;
+    now.hour += TZ;
+    now.sat = gps.satellites();
+    now.alt = gps.altitude();
+    now.hdop = gps.hdop()/100;
     show();
+    if(isRec) WriteSeg(&now);
   }
   else showvalid();
 }
