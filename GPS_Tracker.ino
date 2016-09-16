@@ -4,30 +4,65 @@
 #define SDA_PIN 8
 #define SCL_PIN 9
 
-typedef unsigned int uint;
+struct
+{
+  float lat, lon, alt, spd;
+  int year;
+  byte month, day, hour, minute, second;
+  unsigned long hdop;
+  unsigned short sat;
+} now;
 
 SSD1306 display(SDA_PIN,SCL_PIN);
 TinyGPS gps;
 
-void show(float *data)
+void show()
 {
   display.clear();
   display.setCursor(0,0);
-  display.print("Latitude:");
-  display.setCursor(50,0);
-  display.print(data[0]);
-  display.setCursor(0,8);
-  display.print("Longitude:");
-  display.setCursor(50,8);
-  display.print(data[1]);
-  display.setCursor(0,16);
-  display.print("Satellite:");
-  display.setCursor(50,16);
-  display.print(data[2]);
-  display.setCursor(0,24);
+  display.print("Lat:");
+  display.print(now.lat);
+
+  display.setCursor(0,9);
+  display.print("Lon:");
+  display.print(now.lon);
+
+  display.setCursor(0,18);
+  display.print("Sat:");
+  display.print(now.sat);
+  
+  display.setCursor(0,27);
+  display.print("Alt:");
+  display.print(now.alt);
+  
+  display.setCursor(0,36);
   display.print("HDOP:");
-  display.setCursor(50,24);
-  display.print(data[3]);
+  display.print(now.hdop);
+  
+  display.setCursor(0,45);
+  display.print("Date:");
+  display.print(now.year);
+  display.print("-");
+  display.print(now.month);
+  display.print("-");
+  display.print(now.day);
+  
+  display.setCursor(0,54);
+  display.print("Time:");
+  display.print(now.hour);
+  display.print(":");
+  display.print(now.minute);
+  display.print(":");
+  display.print(now.second);
+  
+  display.update();
+}
+
+void showvalid()
+{
+  display.clear();
+  display.setCursor(0,0);
+  display.print("Searching...");
   display.update();
 }
 
@@ -35,6 +70,10 @@ void setup()
 {
   Serial.begin(9600);
   display.initialize();
+  display.setCursor(0,0);
+  display.print("GPS Tracker By SMDLL");
+  display.update();
+  delay(1500);
 }
 
 void loop()
@@ -42,7 +81,6 @@ void loop()
   bool newData = false;
   unsigned long chars;
 
-  // For one second we parse GPS data and report some key values
   for (unsigned long start = millis(); millis() - start < 1000;)
   {
     while (Serial.available())
@@ -55,11 +93,12 @@ void loop()
 
   if (newData)
   {
-    float data[4];
-    unsigned long age;
-    gps.f_get_position(&data[0], &data[1], &age);
-    data[2]=(float)gps.satellites();
-    data[3]=(float)gps.hdop();
-    show(data);
+    gps.f_get_position(&now.lat, &now.lon);
+    gps.get_datetime(&now.year, &now.month, &now.day, &now.hour, &now.minute, &now.second);
+    now.sat=gps.satellites();
+    now.alt=gps.altitude();
+    now.hdop=gps.hdop()/100;
+    show();
   }
+  else showvalid();
 }

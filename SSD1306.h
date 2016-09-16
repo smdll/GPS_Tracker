@@ -6,7 +6,7 @@ This SSD1306 driver only works on monochrome 0.96-inch 128x64 OLED with IIC
 #define SSD1306_H_
 
 #include "Arduino.h"
-#include <GFX.h>
+#include "GFX.h"
 
 using namespace std;
 
