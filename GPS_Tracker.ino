@@ -1,5 +1,5 @@
 #include "SSD1306.h"
-#include "NMEA.h"
+#include "TinyGPS.h"
 
 #define SDA_PIN 8
 #define SCL_PIN 9
@@ -7,55 +7,59 @@
 typedef unsigned int uint;
 
 SSD1306 display(SDA_PIN,SCL_PIN);
-GPS now;
+TinyGPS gps;
 
-int inp = 0;
-
-void show()
+void show(float *data)
 {
   display.clear();
   display.setCursor(0,0);
-  display.print(now.lat);
+  display.print("Latitude:");
+  display.setCursor(50,0);
+  display.print(data[0]);
   display.setCursor(0,8);
-  display.print(now.lon);
+  display.print("Longitude:");
+  display.setCursor(50,8);
+  display.print(data[1]);
+  display.setCursor(0,16);
+  display.print("Satellite:");
+  display.setCursor(50,16);
+  display.print(data[2]);
+  display.setCursor(0,24);
+  display.print("HDOP:");
+  display.setCursor(50,24);
+  display.print(data[3]);
   display.update();
-}
-
-void strcpy(char *a, char *b,int len)
-{
-  for(int i=0;i<=len;i++) a[i]=b[i];
 }
 
 void setup()
 {
   Serial.begin(9600);
   display.initialize();
-  display.setCursor(0,0);
-  display.print("GPS_Tracker By SMD");
-  display.update();
-  delay(1500);
-  display.clear();
 }
 
 void loop()
 {
-  char comdata[100],*p3;
-  char gga[100], rmc[100], *p1, *p2;
-  int i=0;
-  p1=gga;
-  p2=rmc;
-  p3=comdata;
-  while(Serial.available()>0)
+  bool newData = false;
+  unsigned long chars;
+
+  // For one second we parse GPS data and report some key values
+  for (unsigned long start = millis(); millis() - start < 1000;)
   {
-    comdata[i]=char(Serial.read());
-    i++;
-    delay(2);
+    while (Serial.available())
+    {
+      char c = Serial.read();
+      if (gps.encode(c)) // Did a new valid sentence come in?
+        newData = true;
+    }
   }
-  if(comdata[0]=='$')
+
+  if (newData)
   {
-    if(comdata[3]=='R') strcpy(p2, comdata, i);
-    else if(comdata[4]=='G'&&comdata[5]=='A') strcpy(p1, comdata, i);
+    float data[4];
+    unsigned long age;
+    gps.f_get_position(&data[0], &data[1], &age);
+    data[2]=(float)gps.satellites();
+    data[3]=(float)gps.hdop();
+    show(data);
   }
-  now=GPS_Proc(p1, p2);
-  if(now.stat!=0) show();
 }
