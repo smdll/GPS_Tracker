@@ -16,7 +16,7 @@ SSD1306 display(A4, A5);
 TinyGPS gps;
 //File GPX;
 
-unsigned char TZ = 8; // set timezone here
+int TZ = 8; // set timezone here
 /*
 volatile bool isRec = false, isFile = false;
 
@@ -64,29 +64,29 @@ bool CreateEnd()
 void show()
 {
   display.clear();
-  display.setCursor(0,0);
+  display.setCursor(0, 0);
   display.print("Lat:");
   display.print(now.lat);
   display.print(" Lon:");
   display.print(now.lon);
 
-  display.setCursor(0,9);
+  display.setCursor(0, 9);
   display.print("Speed:");
   display.print(now.spd);
   display.print("m/s");
   
-  display.setCursor(0,18);
+  display.setCursor(0, 18);
   display.print("Alt:");
   display.print(now.alt/100.0);
   display.print("m");
   
-  display.setCursor(0,27);
+  display.setCursor(0, 27);
   display.print("Sat:");
   display.print(now.sat);
   display.print("  HDOP:");
   display.print(now.hdop);
   
-  display.setCursor(0,36);
+  display.setCursor(0, 36);
   display.print("Date:20");
   display.print(now.year);
   display.print("-");
@@ -94,7 +94,7 @@ void show()
   display.print("-");
   display.print((now.hour < 16) ? now.day : now.day + 1);
   
-  display.setCursor(0,45);
+  display.setCursor(0, 45);
   display.print("Time:");
   display.print((now.hour < 16) ? now.hour + TZ : now.hour + TZ-24);
   display.print(":");
@@ -104,7 +104,7 @@ void show()
 
   /*if(isRec)
   {
-    display.setCursor(54,0);
+    display.setCursor(54, 0);
     display.print("Recording Track Points");
   }
   */
@@ -114,7 +114,7 @@ void show()
 void showNoCardFile()
 {
   display.clear();
-  display.setCursor(0,0);
+  display.setCursor(0, 0);
   display.print("No SD Card Found or Can't Create File");
   display.update();
   delay(1000);
@@ -123,7 +123,7 @@ void showNoCardFile()
 void showNoData()
 {
   display.clear();
-  display.setCursor(0,0);
+  display.setCursor(0, 0);
   display.print("Searching...");
   display.update();
 }
@@ -143,8 +143,9 @@ void setup()
 {
   //attachInterrupt(3, Rec, CHANGE);
   mySerial.begin(9600);
+  Serial.begin(9600);// for debug use, comment if done
   display.initialize();
-  display.setCursor(0,0);
+  display.setCursor(0, 0);
   display.print("GPS Tracker By SMDLL");
   display.update();
   delay(1500);
@@ -160,6 +161,7 @@ void loop()
     while (mySerial.available())
     {
       char c = mySerial.read();
+      Serial.print(c); // print realtime gps data
       if (gps.encode(c)) // Did a new valid sentence come in?
         newData = true;
     }
@@ -173,6 +175,11 @@ void loop()
     now.sat = gps.satellites();
     now.alt = gps.altitude();
     now.hdop = gps.hdop()/100;
+    // calculate timezone automatically, uncomment this block if set manually
+    /*
+    float TZtemp = now.lon / 15.0;
+    TZ = (int)(TZtemp + 0.5) > (int)TZtemp ? (int)TZtemp + 1 : (int)TZtemp;
+    */
     show();
     //if(isRec) WriteSeg();
   }
