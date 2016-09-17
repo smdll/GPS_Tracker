@@ -240,7 +240,7 @@ int TinyGPS::gpsstrcmp(const char *str1, const char *str2)
   return *str1;
 }
 
-void TinyGPS::f_get_position(float *latitude, float *longitude)
+void TinyGPS::f_get_position(double *latitude, double *longitude)
 {
   long lat, lon;
   lat = _latitude;
@@ -249,7 +249,7 @@ void TinyGPS::f_get_position(float *latitude, float *longitude)
   *longitude = lon / 1000000.0;
 }
 
-void TinyGPS::get_datetime(int *year, byte *month, byte *day, byte *hour, byte *minute, byte *second)
+void TinyGPS::get_datetime(byte *year, byte *month, byte *day, byte *hour, byte *minute, byte *second)
 {
   unsigned long date, time;
   
@@ -257,8 +257,6 @@ void TinyGPS::get_datetime(int *year, byte *month, byte *day, byte *hour, byte *
   time = _time;
   
   *year = date % 100;
-  *year += *year > 80 ? 1900 : 2000;
-
   *month = (date / 100) % 100;
   *day = date / 10000;
   *hour = time / 1000000;

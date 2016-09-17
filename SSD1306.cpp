@@ -4,7 +4,7 @@ This SSD1306 driver only works on monochrome 0.96-inch 128x64 OLED with IIC
 
 #include "SSD1306.h"
 
-SSD1306::SSD1306(int sda, int scl):
+SSD1306::SSD1306(unsigned char sda, unsigned char scl):
 GFX(128,64)
 {
 	m_sda = sda;

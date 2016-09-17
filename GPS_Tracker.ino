@@ -1,16 +1,77 @@
+#include <SD.h>
+#include <SoftwareSerial.h>
 #include "SSD1306.h"
 #include "TinyGPS.h"
-#include "GPS_Tracker.h"
 
-#define SDA_PIN 8
-#define SCL_PIN 9
-
-SSD1306 display(SDA_PIN,SCL_PIN);
+struct
+{
+  double lat, lon;
+  float alt, spd;
+  byte year, month, day, hour, minute, second;
+  unsigned long hdop;
+  unsigned char sat;
+} now;
+SoftwareSerial mySerial(5, 6); // RX, TX
+SSD1306 display(A4, A5);
 TinyGPS gps;
-GPSdat now;
+File GPX;
 
-int TZ;
-volatile bool isRec = false, RecFlag = true;
+unsigned char TZ = 8; // set timezone here
+volatile bool isRec = false, isFile = false;
+
+bool CreateHead()
+{
+  if(!SD.begin(4)) return false;
+  GPX = SD.open("Track.gpx", FILE_WRITE);
+  if(!GPX) return false;
+  GPX.println("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\" ?>");
+  GPX.println("<gpx>");
+  GPX.println("\t<trk>");
+  GPX.println("\t\t<name>GPS Track Output</name>");
+  GPX.println("\t\t\t<trkseg>");
+  isFile = true;
+  return true;
+}
+
+bool WriteSeg()
+{
+  GPX.print("\t\t\t\t<trkpt lat=\"");
+  GPX.print(now.lat);
+  GPX.print("\" lon=\"");
+  GPX.print(now.lon);
+  GPX.println("\">");
+  
+  GPX.print("\t\t\t\t\t<ele>");
+  GPX.print(now.alt);
+  GPX.println("</ele>");
+  
+  GPX.print("\t\t\t\t\t<time>20");
+  GPX.print(now.year);
+  GPX.print("-");
+  GPX.print(now.month);
+  GPX.print("-");
+  GPX.print(now.day);
+  GPX.print("T");
+  GPX.print(now.hour);
+  GPX.print(":");
+  GPX.print(now.minute);
+  GPX.print(":");
+  GPX.print(now.second);
+  GPX.println("Z</time>");
+  
+  GPX.println("\t\t\t\t</trkpt>");
+  return true;
+}
+
+bool CreateEnd()
+{
+  GPX.println("\t\t\t</trkseg>");
+  GPX.println("\t\t</trk>");
+  GPX.println("</gpx>");
+  
+  GPX.close();
+  return true;
+}
 
 void show()
 {
@@ -26,6 +87,8 @@ void show()
   display.setCursor(0,18);
   display.print("Alt:");
   display.print(now.alt);
+  display.print("  Speed:");
+  display.print(now.spd);
   
   display.setCursor(0,27);
   display.print("Sat:");
@@ -43,23 +106,30 @@ void show()
   
   display.setCursor(0,45);
   display.print("Time:");
-  display.print(now.hour);
+  display.print(now.hour+TZ);
   display.print(":");
   display.print(now.minute);
   display.print(":");
   display.print(now.second);
 
-  if(isRec&&RecFlag)
+  if(isRec)
   {
     display.setCursor(54,0);
     display.print("Recording Track Points");
   }
-  else RecFlag=-RecFlag;
-  
   display.update();
 }
 
-void showvalid()
+void showNoCardFile()
+{
+  display.clear();
+  display.setCursor(0,0);
+  display.print("No SD Card Found or Can't Create File");
+  display.update();
+  delay(1000);
+}
+
+void showNoData()
 {
   display.clear();
   display.setCursor(0,0);
@@ -70,28 +140,24 @@ void showvalid()
 void Rec()
 {
   if(!isRec)
-  {
     isRec = -isRec;
-    if(WriteInit(4)) CreateHead();
-  }
   else
   {
+    CreateEnd();
     isRec = -isRec;
-    if(IsFile) CreateEnd();
   }
 }
 
 void setup()
 {
-  SetTZ(8);
-  TZ = ReadTZ();
-  attachInterrupt(digitalPinToInterrupt(3), Rec, CHANGE);
-  Serial.begin(9600);
+  attachInterrupt(3, Rec, CHANGE);
+  mySerial.begin(9600);
   display.initialize();
   display.setCursor(0,0);
   display.print("GPS Tracker By SMDLL");
   display.update();
   delay(1500);
+  if(!CreateHead()) showNoCardFile();
 }
 
 void loop()
@@ -99,11 +165,11 @@ void loop()
   bool newData = false;
   unsigned long chars;
 
-  for (unsigned long start = millis(); millis() - start < 1000;)
+  for (unsigned long start = millis(); millis() - start < 500;)
   {
-    while (Serial.available())
+    while (mySerial.available())
     {
-      char c = Serial.read();
+      char c = mySerial.read();
       if (gps.encode(c)) // Did a new valid sentence come in?
         newData = true;
     }
@@ -113,12 +179,12 @@ void loop()
   {
     gps.f_get_position(&now.lat, &now.lon);
     gps.get_datetime(&now.year, &now.month, &now.day, &now.hour, &now.minute, &now.second);
-    now.hour += TZ;
+    now.spd = gps.f_speed();
     now.sat = gps.satellites();
     now.alt = gps.altitude();
     now.hdop = gps.hdop()/100;
     show();
-    if(isRec) WriteSeg(&now);
+    if(isRec) WriteSeg();
   }
-  else showvalid();
+  else showNoData();
 }

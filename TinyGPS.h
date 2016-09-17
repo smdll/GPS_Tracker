@@ -21,14 +21,13 @@ public:
 
   inline long altitude() { return _altitude; }
 
-  // satellites used in last full GPGGA sentence
-  inline unsigned short satellites() { return _numsats; }
+  inline unsigned char satellites() { return _numsats; }
 
   // horizontal dilution of precision in 100ths
   inline unsigned long hdop() { return _hdop; }
 
-  void f_get_position(float *latitude, float *longitude);
-  void get_datetime(int *year, byte *month, byte *day, byte *hour, byte *minute, byte *second);
+  void f_get_position(double *latitude, double *longitude);
+  void get_datetime(byte *year, byte *month, byte *day, byte *hour, byte *minute, byte *second);
   float f_altitude();
   float f_speed();
 
@@ -42,8 +41,8 @@ private:
   long _longitude, _new_longitude;
   long _altitude, _new_altitude;
   unsigned long  _speed, _new_speed;
-  unsigned long  _hdop, _new_hdop;
-  unsigned short _numsats, _new_numsats;
+  unsigned char  _hdop, _new_hdop;
+  unsigned char _numsats, _new_numsats;
 
   unsigned long _last_time_fix, _new_time_fix;
   unsigned long _last_position_fix, _new_position_fix;

@@ -13,7 +13,7 @@ using namespace std;
 class SSD1306 : public GFX
 {
 	public:
-		SSD1306(int sda, int scl);
+		SSD1306(unsigned char sda, unsigned char scl);
 		~SSD1306();
 		//Initialize In Setup
 		virtual bool initialize();
@@ -41,8 +41,7 @@ class SSD1306 : public GFX
 		void startDataSequence();
 
 	protected:
-		int m_sda;
-		int m_scl;
+		unsigned char m_sda, m_scl;
 		unsigned char* m_pFramebuffer;//The Frame Buffer For The GFX. Size=64x8 Bytes
 };
 #endif
