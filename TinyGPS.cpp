@@ -12,8 +12,6 @@ TinyGPS::TinyGPS()
   ,  _speed()
   ,  _hdop()
   ,  _numsats()
-  ,  _last_time_fix()
-  ,  _last_position_fix()
   ,  _parity(0)
   ,  _is_checksum_term(false)
   ,  _sentence_type(_GPS_SENTENCE_OTHER)
@@ -130,31 +128,7 @@ bool TinyGPS::term_complete()
     if (checksum == _parity)
     {
       if (_gps_data_good)
-      {
-        _last_time_fix = _new_time_fix;
-        _last_position_fix = _new_position_fix;
-
-        switch(_sentence_type)
-        {
-        case _GPS_SENTENCE_GPRMC:
-          _time      = _new_time;
-          _date      = _new_date;
-          _latitude  = _new_latitude;
-          _longitude = _new_longitude;
-          _speed     = _new_speed;
-          break;
-        case _GPS_SENTENCE_GPGGA:
-          _altitude  = _new_altitude;
-          _time      = _new_time;
-          _latitude  = _new_latitude;
-          _longitude = _new_longitude;
-          _numsats   = _new_numsats;
-          _hdop      = _new_hdop;
-          break;
-        }
-
         return true;
-      }
     }
 
     return false;
@@ -177,48 +151,46 @@ bool TinyGPS::term_complete()
   {
     case COMBINE(_GPS_SENTENCE_GPRMC, 1): // Time in both sentences
     case COMBINE(_GPS_SENTENCE_GPGGA, 1):
-      _new_time = parse_decimal();
-      _new_time_fix = millis();
+      _time = parse_decimal();
       break;
     case COMBINE(_GPS_SENTENCE_GPRMC, 2): // GPRMC validity
       _gps_data_good = _term[0] == 'A';
       break;
     case COMBINE(_GPS_SENTENCE_GPRMC, 3): // Latitude
     case COMBINE(_GPS_SENTENCE_GPGGA, 2):
-      _new_latitude = parse_degrees();
-      _new_position_fix = millis();
+      _latitude = parse_degrees();
       break;
     case COMBINE(_GPS_SENTENCE_GPRMC, 4): // N/S
     case COMBINE(_GPS_SENTENCE_GPGGA, 3):
       if (_term[0] == 'S')
-        _new_latitude = -_new_latitude;
+        _latitude = -_latitude;
       break;
     case COMBINE(_GPS_SENTENCE_GPRMC, 5): // Longitude
     case COMBINE(_GPS_SENTENCE_GPGGA, 4):
-      _new_longitude = parse_degrees();
+      _longitude = parse_degrees();
       break;
     case COMBINE(_GPS_SENTENCE_GPRMC, 6): // E/W
     case COMBINE(_GPS_SENTENCE_GPGGA, 5):
       if (_term[0] == 'W')
-        _new_longitude = -_new_longitude;
+        _longitude = -_longitude;
       break;
     case COMBINE(_GPS_SENTENCE_GPRMC, 7): // Speed (GPRMC)
-      _new_speed = parse_decimal();
+      _speed = parse_decimal();
       break;
     case COMBINE(_GPS_SENTENCE_GPRMC, 9): // Date (GPRMC)
-      _new_date = gpsatol(_term);
+      _date = gpsatol(_term);
       break;
     case COMBINE(_GPS_SENTENCE_GPGGA, 6): // Fix data (GPGGA)
       _gps_data_good = _term[0] > '0';
       break;
     case COMBINE(_GPS_SENTENCE_GPGGA, 7): // Satellites used (GPGGA)
-      _new_numsats = (unsigned char)atoi(_term);
+      _numsats = (unsigned char)atoi(_term);
       break;
     case COMBINE(_GPS_SENTENCE_GPGGA, 8): // HDOP
-      _new_hdop = parse_decimal();
+      _hdop = parse_decimal();
       break;
     case COMBINE(_GPS_SENTENCE_GPGGA, 9): // Altitude (GPGGA)
-      _new_altitude = parse_decimal();
+      _altitude = parse_decimal();
       break;
   }
 
@@ -242,26 +214,18 @@ int TinyGPS::gpsstrcmp(const char *str1, const char *str2)
 
 void TinyGPS::f_get_position(double *latitude, double *longitude)
 {
-  long lat, lon;
-  lat = _latitude;
-  lon = _longitude;
-  *latitude = lat / 1000000.0;
-  *longitude = lon / 1000000.0;
+  *latitude = _latitude / 1000000.0000;
+  *longitude = _longitude / 1000000.0000;
 }
 
 void TinyGPS::get_datetime(byte *year, byte *month, byte *day, byte *hour, byte *minute, byte *second)
 {
-  unsigned long date, time;
-  
-  date = _date;
-  time = _time;
-  
-  *year = date % 100;
-  *month = (date / 100) % 100;
-  *day = date / 10000;
-  *hour = time / 1000000;
-  *minute = (time / 10000) % 100;
-  *second = (time / 100) % 100;
+  *year = _date % 100;
+  *month = (_date / 100) % 100;
+  *day = _date / 10000;
+  *hour = _time / 1000000;
+  *minute = (_time / 10000) % 100;
+  *second = (_time / 100) % 100;
 }
 
 float TinyGPS::f_altitude()    

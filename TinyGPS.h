@@ -3,8 +3,6 @@
 
 #include "Arduino.h"
 
-#include <stdlib.h>
-
 #define _GPS_MPH_PER_KNOT 1.15077945
 #define _GPS_MPS_PER_KNOT 0.51444444
 #define _GPS_KMPH_PER_KNOT 1.852
@@ -35,17 +33,14 @@ private:
   enum {_GPS_SENTENCE_GPGGA, _GPS_SENTENCE_GPRMC, _GPS_SENTENCE_OTHER};
 
   // properties
-  unsigned long _time, _new_time;
-  unsigned long _date, _new_date;
-  long _latitude, _new_latitude;
-  long _longitude, _new_longitude;
-  long _altitude, _new_altitude;
-  unsigned long  _speed, _new_speed;
-  unsigned char  _hdop, _new_hdop;
-  unsigned char _numsats, _new_numsats;
-
-  unsigned long _last_time_fix, _new_time_fix;
-  unsigned long _last_position_fix, _new_position_fix;
+  unsigned long _time;
+  unsigned long _date;
+  long _latitude;
+  long _longitude;
+  long _altitude;
+  unsigned long  _speed;
+  unsigned char  _hdop;
+  unsigned char _numsats;
 
   // parsing state variables
   byte _parity;
